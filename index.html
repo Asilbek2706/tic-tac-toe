@@ -1,46 +1,42 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Tic-Tac-Toe Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.4.1/css/all.css" integrity="sha384-5sAR7xN1Nv6T6+dT2mhtzEpVJvfS3NScPQTrOxhwjIuvcA67KV2R5Jz6kr4abQsz" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
+    <title>Tic Tac Toe Pro</title>
 </head>
+
 <body>
-<div id="setup-screen" class="modal">
-    <div class="modal-content">
-        <h1>🎮 Tic-Tac-Toe Pro</h1>
-        <div class="modes">
-            <button class="btn" onclick="setMode('pvp')">👥 2 Players</button>
-            <button class="btn" onclick="setMode('pvc')">🤖 Robot bilan</button>
+
+<div class="wrapper">
+    <header>
+        <h1>$(TicTacTo).pro</h1>
+    </header>
+
+    <main>
+        <!-- Container -->
+        <div class="container">
         </div>
-        <div id="player-inputs" class="hidden">
-            <input type="text" id="p1-input" placeholder="O'yinchi 1 nomi">
-            <input type="text" id="p2-input" placeholder="O'yinchi 2 nomi">
-            <button id="start-btn" class="btn-start">🚀 Boshlash</button>
+    </main>
+
+
+    <footer>
+        <p>Copyright &copy; 2026 Asilbek Karomatov</p>
+        <div class="links">
+            <a href="https://www.linkedin.com/in/asilbek-karomatov-91336b33b"><i class="fab fa-linkedin-in fa-2x"></i></a>
+            <a href="https://github.com/Asilbek2706/"><i class="fab fa-github-alt fa-2x"></i></a>
+            <a href="https://t.me/as1lbek_2706"><i class="fab fa-telegram fa-2x"></i></a>
         </div>
-    </div>
+    </footer>
 </div>
 
-<div id="game-container" class="hidden">
-    <div class="header">
-        <h2 id="statusText">Tayyormisiz?</h2>
-        <button id="exit-btn" class="btn-exit">🚪 Chiqish</button>
-    </div>
-    <div id="board">
-        <div id="strike" class="strike"></div>
-        <div class="cell" data-index="0"></div>
-        <div class="cell" data-index="1"></div>
-        <div class="cell" data-index="2"></div>
-        <div class="cell" data-index="3"></div>
-        <div class="cell" data-index="4"></div>
-        <div class="cell" data-index="5"></div>
-        <div class="cell" data-index="6"></div>
-        <div class="cell" data-index="7"></div>
-        <div class="cell" data-index="8"></div>
-    </div>
-    <button id="restart-btn" class="btn-restart">🔄 Qayta boshlash</button>
-</div>
 
 <script src="app.js"></script>
 </body>
+
 </html>
