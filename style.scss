@@ -1,0 +1,248 @@
+$p: #00f2fe;
+$s: #4facfe;
+$a: #f093fb;
+$d: #222;
+$w: #fff;
+$g: rgba(255, 255, 255, 0.05);
+$b: 1px solid rgba(255, 255, 255, 0.1);
+
+@mixin fc { display: flex; justify-content: center; align-items: center; }
+
+@keyframes shine { 0% { left: -100%; } 100% { left: 100%; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes win { 0% { background: $a; box-shadow: 0 0 5px $a; } 50% { background: #f5576c; box-shadow: 0 0 20px #f5576c; } 100% { background: $a; box-shadow: 0 0 5px $a; } }
+@keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+body {
+  background: radial-gradient(circle at center, #2b5876 0%, #4e4376 100%);
+  min-height: 100vh;
+  color: $w;
+  overflow-x: hidden;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+header {
+  text-align: center;
+  padding: 50px 0;
+  h1 {
+    font-size: 3.5rem;
+    text-transform: uppercase;
+    background: linear-gradient(45deg, $p, $a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
+    letter-spacing: 5px;
+    animation: float 4s ease-in-out infinite;
+  }
+}
+
+main { flex: 1; @include fc; width: 100%; }
+
+.container {
+  width: 100%;
+  max-width: 550px;
+  background: $g;
+  backdrop-filter: blur(15px);
+  border-radius: 30px;
+  border: $b;
+  padding: 40px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+
+  h2 {
+    font-size: 1.6rem;
+    margin-bottom: 30px;
+    text-align: center;
+    color: $p;
+    text-shadow: 0 0 10px rgba(0,242,254,0.5);
+  }
+}
+
+.mini-container {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  animation: pop 0.5s ease-out;
+}
+
+.players {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  input[type="text"] {
+    background: rgba(0,0,0,0.2);
+    border: $b;
+    padding: 15px 20px;
+    border-radius: 12px;
+    color: $w;
+    font-size: 1rem;
+    outline: none;
+    transition: 0.3s;
+    &:focus { border-color: $p; box-shadow: 0 0 15px rgba(0,242,254,0.2); }
+  }
+
+  input[type="radio"] { display: none; }
+  label {
+    background: rgba(255,255,255,0.05);
+    padding: 12px;
+    border-radius: 10px;
+    border: $b;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.3s;
+    display: block;
+    &:hover { background: rgba(255,255,255,0.1); }
+  }
+  input[type="radio"]:checked + label {
+    background: linear-gradient(45deg, $p, $s);
+    color: $d;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(0,242,254,0.4);
+  }
+}
+
+.difficulty {
+  background: rgba(0,0,0,0.1);
+  padding: 20px;
+  border-radius: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  label:first-child { width: 100%; text-align: center; margin-bottom: 10px; font-weight: bold; color: $a; }
+  input[type="radio"] { display: none; }
+  label:not(:first-child) {
+    padding: 8px 20px;
+    border-radius: 50px;
+    border: $b;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  input[type="radio"]:checked + label { background: $a; color: $d; font-weight: bold; }
+}
+
+button {
+  background: linear-gradient(45deg, $s, $p);
+  border: none;
+  padding: 18px;
+  border-radius: 15px;
+  color: $d;
+  font-weight: 800;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: 0.4s;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: relative;
+  overflow: hidden;
+  &:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+  &::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shine 3s infinite; }
+}
+
+.score-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255,255,255,0.1);
+  padding: 20px;
+  border-radius: 20px;
+  margin-bottom: 30px;
+  border: $b;
+  p {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+    padding: 10px;
+    border-radius: 12px;
+    transition: 0.5s;
+    &.current-turn { background: rgba(0,242,254,0.2); box-shadow: inset 0 0 10px $p; }
+    span { font-size: 1.5rem; font-weight: 900; }
+    .O { color: $p; }
+    .X { color: $a; }
+  }
+  div { font-size: 2.5rem; font-weight: 900; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+}
+
+.board {
+  display: grid;
+  gap: 15px;
+  margin: 0 auto;
+  perspective: 1000px;
+}
+
+.tile {
+  background: rgba(255,255,255,0.03);
+  border: $b;
+  border-radius: 15px;
+  @include fc;
+  font-size: 3rem;
+  font-weight: 900;
+  aspect-ratio: 1/1;
+  cursor: pointer;
+  transition: 0.3s;
+  &:hover { background: rgba(255,255,255,0.1); transform: translateZ(20px); }
+  &.O { color: $p; text-shadow: 0 0 15px $p; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  &.X { color: $a; text-shadow: 0 0 15px $a; animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+}
+
+.winning-tile { animation: win 0.6s infinite !important; border: none !important; }
+
+.replay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 10px 15px;
+  font-size: 0.8rem;
+  background: $a;
+}
+
+#homeBtn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 10px 15px;
+  background: transparent;
+  border: $b;
+  color: $w;
+  font-size: 0.8rem;
+  &:hover { background: rgba(255,255,255,0.1); }
+}
+
+footer {
+  text-align: center;
+  padding: 40px 0;
+  p { opacity: 0.5; font-size: 0.9rem; margin-bottom: 20px; }
+  .links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    a {
+      color: $w;
+      font-size: 1.5rem;
+      transition: 0.3s;
+      opacity: 0.6;
+      &:hover { opacity: 1; color: $p; transform: scale(1.2); }
+    }
+  }
+}
+
+@media (max-width: 500px) {
+  .container { padding: 20px; border-radius: 0; }
+  header h1 { font-size: 2.2rem; }
+  .tile { font-size: 2rem; }
+  .score-container div { font-size: 1.5rem; }
+}
+
+.tile-nohover { cursor: default; pointer-events: none; opacity: 0.8; }

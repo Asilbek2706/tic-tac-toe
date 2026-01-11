@@ -1,450 +1,609 @@
-// TODO: AI
-
-// ---- Variables ---- //
-var $container = $(".container"); // Main container
-var $board; // Game Board
-var $tiles; // Squares on the board
-var players = { p1: { name: "", score: 0 }, p2: { name: "", score: 0 } }; // Players names
-var rowSize = 3; // Row size (Row size of 3 means 3*3 grid)
-var winningInterval = []; // Winning Intervals (to reset intervals)
-var replayBtn; // Replay button
-// Flags
-var isP1Turn = true; // To track turns
-var gameOver = false; // Game over
+var $container = $(".container");
+var $board;
+var $tiles;
+var players = { p1: { name: "", score: 0 }, p2: { name: "", score: 0 } };
+var rowSize = 3;
+var winningInterval = [];
+var isP1Turn = true;
+var gameOver = false;
 var isDraw = false;
-var againstAI = false; // Against AI or Player
-// Variables to hold plays
-var oArr = [],
-    xArr = [];
+var againstAI = false;
+var oArr = [], xArr = [];
 
-// ---- Functions ---- //
-
-// ** MAIN VIEW ** //
-// Load main page
 function loadApp() {
-    // fade container in and clear it
-    $container.hide();
-    $container.empty().fadeIn("slow");
+    $container.hide().empty().fadeIn("slow");
     $(".links").show("slow");
-    // Reset preferences
     againstAI = false;
     rowSize = 3;
     players.p2.name = "";
-
-    // Heading
     var h2 = $("<h2/>").text("Let's play some pro Tic Tac Toe");
-    // Container to hold elements
     var miniContainer = $("<div/>").addClass("mini-container");
-    // Paragraph
-    var p = $("<p/>").text("You can write your name(s) if you wnat");
+    var p = $("<p/>").text("Configure your game preferences");
     miniContainer.append(p);
-
-    // Div to hold user preferences
-    var div = $("<div/>").addClass("players");
-    // Radio Selections and Labels
-    var radio = $("<input type='radio' id='pvp' checked value='p'>").click(
-        playAgainst
-    );
-    div.append(radio);
-    var label = $("<label>")
-        .attr("for", "pvp")
-        .text("Player vs. Player");
-    div.append(label);
-    div.append($("<br>")); // Add break
-    var radio = $("<input type='radio' id='pvai' value='ai'>").click(playAgainst);
-    div.append(radio);
-    var label = $("<label>")
-        .attr("for", "pvai")
-        .text("Player vs. AI");
-    div.append(label);
-    miniContainer.append(div);
-
-    // New div to hold player name inputs
-    div = $("<div/>").addClass("players");
-    // Input for names
-    var input1 = $("<input type='text' placeholder='Player 1'>").on(
-        "input",
-        getNames
-    );
-    div.append(input1);
-    div.append($("<br>"));
-    var input2 = $("<input type='text' placeholder='Player 2'>").on("input", getNames);
-    div.append(input2);
-    miniContainer.append(div);
-
-    // Grid preference
+    var divOpponent = $("<div/>").addClass("players");
+    divOpponent.append($("<input type='radio' name='opp' id='pvp' checked value='p'>").click(playAgainst));
+    divOpponent.append($("<label for='pvp'>Player vs. Player</label>"));
+    divOpponent.append($("<input type='radio' name='opp' id='pvai' value='ai'>").click(playAgainst));
+    divOpponent.append($("<label for='pvai'>Player vs. AI</label>"));
+    miniContainer.append(divOpponent);
+    var divNames = $("<div/>").addClass("players").attr("id", "nameInputs");
+    divNames.append($("<input type='text' id='p1name' placeholder='Player 1 Name'>").on("input", getNames));
+    divNames.append($("<input type='text' id='p2name' placeholder='Player 2 Name'>").on("input", getNames));
+    miniContainer.append(divNames);
     var gridPreference = $("<div/>").addClass("difficulty");
-    label = $("<label/>").text("Difficulty: ");
-    gridPreference.append(label);
-    radio = $("<input type='radio' id='grid3' checked value='3'>").click(
-        setDifficulty
-    );
-    gridPreference.append(radio);
-    label = $("<label/>")
-        .attr("for", "grid3")
-        .text("3x3");
-    gridPreference.append(label);
-    radio = $("<input type='radio' id='grid4' value='4'>").click(setDifficulty);
-    gridPreference.append(radio);
-    label = $("<label/>")
-        .attr("for", "grid4")
-        .text("4x4");
-    gridPreference.append(label);
-    radio = $("<input type='radio' id='grid5' value='5'>").click(setDifficulty);
-    gridPreference.append(radio);
-    label = $("<label/>")
-        .attr("for", "grid5")
-        .text("5x5");
-    gridPreference.append(label);
+    gridPreference.append($("<label>Grid Size:</label>"));
+    [3, 4, 5].forEach(num => {
+        gridPreference.append($(`<input type='radio' name='grid' id='grid${num}' ${num === 3 ? 'checked' : ''} value='${num}'>`).click(setDifficulty));
+        gridPreference.append($(`<label for='grid${num}'>${num}x${num}</label>`));
+    });
     miniContainer.append(gridPreference);
-
-    // Play button
-    var btn = $("<button/>")
-        .text(" Play")
-        .addClass("fas fa-th")
-        .click(gameInit);
+    var btn = $("<button/>").text("Start Game").addClass("fas fa-play").click(gameInit);
     miniContainer.append(btn);
-
-    // Add to the main container
-    $container.append(h2);
-    $container.append(miniContainer);
+    $container.append(h2).append(miniContainer);
 }
 
-// Change opponent function
 function playAgainst(e) {
-    // Get and reset radio buttons
-    var radioes = $(".players input[type=radio]");
-    for (r of radioes) r.checked = false;
-    // Mark the clicked button
-    this.checked = true;
-    // Deside wether the second input field is needed
     if (this.value === "p") {
         againstAI = false;
-        $(".players input[placeholder='Player 2']").slideDown("fast");
+        $("#p2name").slideDown("fast");
     } else {
         againstAI = true;
-        $(".players input[placeholder='Player 2']").slideUp("fast");
+        $("#p2name").slideUp("fast");
     }
 }
 
-// Set difficulty level based on selection
 function setDifficulty(e) {
-    // Get and reset radio buttons
-    var btns = $(".difficulty input");
-    for (i of btns) i.checked = false;
-    // Mark the clicked button
-    this.checked = true;
-    // Set the row size for the grid
-    rowSize = this.value;
+    rowSize = parseInt(this.value);
 }
 
-// Get names on key up (while typing)
 function getNames(e) {
-    // Get the last character of the placeholder
-    var player = this.placeholder.charAt(this.placeholder.length - 1);
-    // Set the names properly
-    if (player === "1") players.p1.name = this.value;
-    if (player === "2") players.p2.name = this.value;
+    if (this.id === "p1name") players.p1.name = this.value;
+    if (this.id === "p2name") players.p2.name = this.value;
 }
 
-// ** TRANSIOTIONING ** //
-
-// Initialize the game
 function gameInit(e) {
-    // Reset flags and variables
     gameOver = false;
     isDraw = false;
     isP1Turn = true;
-    (xArr = []), (oArr = []);
-    // Remove score continer
+    xArr = []; oArr = [];
     $(".score-container").remove();
     if (players.p1.name === "") players.p1.name = "P1";
     if (players.p2.name === "" && !againstAI) players.p2.name = "P2";
-    else if (againstAI) players.p2.name = "AI";
-    // Remove content with animation
-    $container.fadeOut("fast");
-    setTimeout(() => {
+    else if (againstAI) players.p2.name = "Smart AI";
+    $container.fadeOut("fast", function() {
         $container.empty();
         startGame();
-    }, 500);
-
+    });
     $(".links").hide("slow");
 }
 
-// Start the game
-function startGame(e) {
+function startGame() {
     var scoreContainer = $("<div/>").addClass("score-container");
-
-    var p = $("<p/>")
-        .text(players.p1.name + " ")
-        .append($("<span class='O'>O</span>"));
-    scoreContainer.append(p);
-    var div = $("<div/>");
-
-    if (localStorage.getItem("scores") === null)
-        localStorage.setItem("scores", players.p2.score + " - " + players.p2.score);
-    div.text(players.p1.score + " - " + players.p2.score);
-    scoreContainer.append(div);
-
-    p = $("<p/>")
-        .text(players.p2.name + " ")
-        .append($("<span class='X'>X</span>"));
-    scoreContainer.append(p);
-    $container.prepend(scoreContainer);
-
-    var homeBtn = $("<button/>")
-        .text("Home ")
-        .append($("<i/>").addClass("fas fa-home no-font	"))
-        .css("margin", "0")
-        .click(goHome);
-    $container.prepend(homeBtn);
-    $($(".score-container p")[0]).addClass("current-turn");
-    // console.log($($(".score-container p")[0]).addClass("a"));
-
-    // Add board div
+    var p1Disp = $("<p/>").attr("id", "p1-disp").text(players.p1.name + " ").append($("<span class='O'>O</span>"));
+    var scoreDisp = $("<div/>").attr("id", "main-score").text(players.p1.score + " - " + players.p2.score);
+    var p2Disp = $("<p/>").attr("id", "p2-disp").text(players.p2.name + " ").append($("<span class='X'>X</span>"));
+    scoreContainer.append(p1Disp).append(scoreDisp).append(p2Disp);
+    var homeBtn = $("<button/>").attr("id", "homeBtn").html("<i class='fas fa-home'></i>").click(goHome);
+    $container.append(homeBtn).append(scoreContainer);
+    $("#p1-disp").addClass("current-turn");
     $board = $("<div/>").addClass("board");
-    // Give it proper grid size
-    $board.css("grid-template-columns", "repeat(" + rowSize + ", 1fr)");
-    $board.css("grid-template-rows", "repeat(" + rowSize + ", 1fr)");
-
-    // Generate tiles based on row size
+    $board.css({
+        "grid-template-columns": "repeat(" + rowSize + ", 1fr)",
+        "grid-template-rows": "repeat(" + rowSize + ", 1fr)"
+    });
     for (let i = 0; i < rowSize; i++) {
         for (let j = 0; j < rowSize; j++) {
-            let tile = $("<div/>").addClass("tile");
-            tile.attr("id", "" + i + j).click(tileClicked);
+            let tile = $("<div/>").addClass("tile").attr("id", "t-" + i + "-" + j).click(function() {
+                tileClicked(i, j);
+            });
             $board.append(tile);
         }
     }
-    // Add to container
     $container.append($board);
     $tiles = $(".tile");
-    // Set time out to show
-    setTimeout(() => {
-        $container.fadeIn("fast");
-    }, 500);
-
-    var replayBtn = $("<button/>")
-        .text(" Replay ")
-        .css({ display: "block", margin: "auto", float: "right" })
-        .addClass("replay")
-        .append($("<i/>").addClass("fas fa-redo"))
-        .click(reset);
-    replayBtn.hide();
-    $container.prepend(replayBtn);
+    var replayBtn = $("<button/>").text("Replay").addClass("replay").hide().click(reset);
+    $container.append(replayBtn);
+    $container.fadeIn("fast");
 }
 
-// On square click
-function tileClicked(e) {
-    // var clickedTile = this;
-    palyOn(this.id);
-    if (againstAI && !gameOver) AITurn();
+function tileClicked(r, c) {
+    var id = "t-" + r + "-" + c;
+    if ($("#" + id).text() !== "" || gameOver) return;
+    playOn(id);
+    if (againstAI && !gameOver) {
+        setTimeout(AILogic, 400);
+    }
 }
 
-function palyOn(tileID) {
-    // Check what to play
+function playOn(tileID) {
     var toPlay = isP1Turn ? "O" : "X";
-    // Remove event from the clicked tile
-    $("#" + tileID).off("click");
-    // Push the play accordingly to the proper array
+    var $el = $("#" + tileID);
+    $el.text(toPlay).addClass(toPlay).off("click");
     isP1Turn ? oArr.push(tileID) : xArr.push(tileID);
-    $("#" + tileID)
-        .text(toPlay)
-        .addClass(toPlay);
-
-    $(".score-container div").className = toPlay;
-    // Check for match
     checkForMatch();
-    // Switch turns
-    switchTurns();
-}
-
-function AITurn() {
-    var patterns = getPatterns();
-    var emptyTile = [],
-        allEmpty = [],
-        count = 0;
-    allPatterns: for (let i = 0; i < patterns.length; i++) {
-        // to count player's moves
-        for (let j = 0; j < patterns[i].length; j++) {
-            // If player is winning - interrupt
-            // if(oArr.length < 3) return;
-            // debugger;
-            emptyTile = [];
-            count = 0;
-            if (!patterns[i][j].every(isFilled)) {
-                for (let o = 0; o < patterns[i][j].length; o++) {
-                    if ($("#" + patterns[i][j][o]).text() === "X") {
-                        count++;
-                    } else if ($("#" + patterns[i][j][o]).text() === "") {
-                        allEmpty.push(patterns[i][j][o]);
-                        emptyTile.push(patterns[i][j][o]);
-                    }
-                    if (count > 1) {
-                        for (let k = 0; k < patterns[i][j].length; k++) {
-                            if ($("#" + patterns[i][j][k]).text() === "") {
-                                allEmpty.push(patterns[i][j][k]);
-                                emptyTile.push(patterns[i][j][k]);
-                            }
-                        }
-                        break allPatterns;
-                    }
-                }
-            }
-        }
-    }
-    console.log(count);
-    if (count > 1) {
-        console.log("Winning");
-        console.log(emptyTile, count);
-        palyOn(emptyTile.shift());
-        return;
-    }
-
-    allPatterns1: for (let i = 0; i < patterns.length; i++) {
-        // to count player's moves
-        for (let j = 0; j < patterns[i].length; j++) {
-            // If player is winning - interrupt
-            // if(oArr.length < 3) return;
-            // debugger;
-            emptyTile = [];
-            count = 0;
-            if (!patterns[i][j].every(isFilled)) {
-                for (let o = 0; o < patterns[i][j].length; o++) {
-                    if ($("#" + patterns[i][j][o]).text() === "O") {
-                        count++;
-                    } else if ($("#" + patterns[i][j][o]).text() === "") {
-                        allEmpty.push(patterns[i][j][o]);
-                        emptyTile.push(patterns[i][j][o]);
-                    }
-                    if (count > 1) {
-                        for (let k = 0; k < patterns[i][j].length; k++) {
-                            if ($("#" + patterns[i][j][k]).text() === "") {
-                                allEmpty.push(patterns[i][j][k]);
-                                emptyTile.push(patterns[i][j][k]);
-                            }
-                        }
-                        break allPatterns1;
-                    }
-                }
-            }
-        }
-    }
-    console.log(count);
-    if (count > 1) {
-        console.log("Danger");
-        console.log(emptyTile, count);
-        palyOn(emptyTile.shift());
-        return;
-    } else {
-        console.log("No Danger");
-        console.log(allEmpty);
-        palyOn(allEmpty.pop());
-        return;
-    }
-}
-
-function isFilled(element) {
-    return $("#" + element).text() !== "";
+    if (!gameOver) switchTurns();
 }
 
 function switchTurns() {
-    if (gameOver) return;
     isP1Turn = !isP1Turn;
     $(".score-container p").toggleClass("current-turn");
 }
 
-function goHome() {
-    players = { p1: { name: "", score: 0 }, p2: { name: "", score: 0 } };
-    reset();
-    $container.fadeOut("slow");
-    setTimeout(loadApp, 500);
-}
-
-// Check for match function
-function checkForMatch() {
-    // Return if no one played at least 3 times
-    if (oArr.length < rowSize && xArr.length < rowSize) return;
-    // Get the winning patterns
-    var patterns = getPatterns();
-    // Loop through patterns and finish the game if match is found
-    for (let i = 0; i < patterns.length; i++) {
-        for (let j = 0; j < patterns[i].length; j++) {
-            if (patterns[i][j].every(isO)) {
-                didWin(patterns[i][j]);
-                return;
-            } else if (patterns[i][j].every(isX)) {
-                didWin(patterns[i][j]);
-                return;
+function AILogic() {
+    let bestScore = -Infinity;
+    let move;
+    let available = getAvailableMoves();
+    if (rowSize > 3 && available.length > (rowSize * rowSize) - 2) {
+        move = available[Math.floor(Math.random() * available.length)];
+    } else {
+        for (let i = 0; i < available.length; i++) {
+            let id = available[i];
+            setVirtualTile(id, "X");
+            let score = minimax(0, false, -Infinity, Infinity);
+            setVirtualTile(id, "");
+            if (score > bestScore) {
+                bestScore = score;
+                move = id;
             }
         }
     }
-    if (oArr.length + xArr.length === rowSize * rowSize) {
+    if (move) playOn(move);
+}
+
+function minimax(depth, isMaximizing, alpha, beta) {
+    let result = checkWinnerVirtual();
+    if (result !== null) {
+        return result === "X" ? 10 - depth : result === "O" ? depth - 10 : 0;
+    }
+    if (depth > (rowSize === 3 ? 9 : 4)) return 0;
+    let available = getAvailableMoves();
+    if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < available.length; i++) {
+            setVirtualTile(available[i], "X");
+            let score = minimax(depth + 1, false, alpha, beta);
+            setVirtualTile(available[i], "");
+            bestScore = Math.max(score, bestScore);
+            alpha = Math.max(alpha, score);
+            if (beta <= alpha) break;
+        }
+        return bestScore;
+    } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < available.length; i++) {
+            setVirtualTile(available[i], "O");
+            let score = minimax(depth + 1, true, alpha, beta);
+            setVirtualTile(available[i], "");
+            bestScore = Math.min(score, bestScore);
+            beta = Math.min(beta, score);
+            if (beta <= alpha) break;
+        }
+        return bestScore;
+    }
+}
+
+function getAvailableMoves() {
+    let moves = [];
+    $tiles.each(function() {
+        if ($(this).text() === "") moves.push($(this).attr("id"));
+    });
+    return moves;
+}
+
+function setVirtualTile(id, val) {
+    $("#" + id).text(val);
+}
+
+function checkWinnerVirtual() {
+    let win = findWinningPattern();
+    if (win) return $("#" + win[0]).text();
+    if (getAvailableMoves().length === 0) return "tie";
+    return null;
+}
+
+function checkForMatch() {
+    let winPattern = findWinningPattern();
+    if (winPattern) {
+        didWin(winPattern);
+    } else if (getAvailableMoves().length === 0) {
         isDraw = true;
         gameOver = true;
         showReplayBtn();
     }
 }
 
-// Test if all elements are match for X or O
-function isO(currentVal) {
-    return $("#" + currentVal).text() === "O";
-}
-function isX(currentVal) {
-    return $("#" + currentVal).text() === "X";
-}
-
-function togglePattern(id) {
-    winningInterval.push(
-        setInterval(() => {
-            $("#" + id).toggleClass("winning-tile");
-        }, 500)
-    );
-}
-
-function didWin(winningPattern) {
-    gameOver = true;
-    for (var t of $tiles) {
-        $(t).off("click");
-        $(t).addClass("tile-nohover");
-        $(t).removeClass("tile");
+function findWinningPattern() {
+    let patterns = getPatterns();
+    for (let i = 0; i < patterns.length; i++) {
+        for (let j = 0; j < patterns[i].length; j++) {
+            let p = patterns[i][j];
+            let first = $("#" + p[0]).text();
+            if (first !== "" && p.every(id => $("#" + id).text() === first)) {
+                return p;
+            }
+        }
     }
-    for (id of winningPattern) togglePattern(id);
-    isP1Turn ? players.p1.score++ : players.p2.score++;
+    return null;
+}
+
+function getPatterns() {
+    var rows = [], cols = [], d1 = [], d2 = [];
+    for (let i = 0; i < rowSize; i++) {
+        let row = [], col = [];
+        for (let j = 0; j < rowSize; j++) {
+            row.push("t-" + i + "-" + j);
+            col.push("t-" + j + "-" + i);
+        }
+        rows.push(row);
+        cols.push(col);
+        d1.push("t-" + i + "-" + i);
+        d2.push("t-" + i + "-" + (rowSize - i - 1));
+    }
+    return [rows, cols, [d1, d2]];
+}
+
+function didWin(pattern) {
+    gameOver = true;
+    $tiles.addClass("tile-nohover").off("click");
+    pattern.forEach(id => {
+        let interval = setInterval(() => {
+            $("#" + id).toggleClass("winning-tile");
+        }, 300);
+        winningInterval.push(interval);
+    });
+    if (isP1Turn) players.p1.score++;
+    else players.p2.score++;
+    $("#main-score").text(players.p1.score + " - " + players.p2.score);
     showReplayBtn();
 }
 
 function showReplayBtn() {
     setTimeout(() => {
-        $(".replay").show("slow");
-    }, 800);
+        $(".replay").fadeIn("slow");
+    }, 500);
 }
 
 function reset() {
+    winningInterval.forEach(clearInterval);
+    winningInterval = [];
     gameInit();
-    for (interval of winningInterval) {
-        clearInterval(interval);
+}
+
+function goHome() {
+    players = { p1: { name: "", score: 0 }, p2: { name: "", score: 0 } };
+    winningInterval.forEach(clearInterval);
+    winningInterval = [];
+    $container.fadeOut("fast", loadApp);
+}
+
+function analyticsTrack() {
+    let session = {
+        grid: rowSize,
+        mode: againstAI ? "AI" : "PVP",
+        p1: players.p1.name,
+        p2: players.p2.name,
+        time: new Date().toISOString()
+    };
+    localStorage.setItem("lastSession", JSON.stringify(session));
+}
+
+function handleResize() {
+    let w = $(window).width();
+    if (w < 400) {
+        $board.css("gap", "5px");
+    } else {
+        $board.css("gap", "15px");
     }
 }
 
-// Get patterns function: it loops through the grid to identify the winning patterns
-function getPatterns() {
-    var rows = [],
-        cols = [],
-        cross1 = [],
-        cross2 = [];
-    for (let i = 0; i < rowSize; i++) {
-        var aRow = [],
-            aCol = [];
-        for (var j = 0; j < rowSize; j++) {
-            aRow.push("" + i + j);
-            aCol.push("" + j + i);
-            if (i === j) cross1.push("" + i + j);
-        }
-        rows.push(aRow);
-        cols.push(aCol);
-        cross2.push("" + i + (rowSize - i - 1));
-    }
-    return [rows, cols, [cross1, cross2]];
+$(window).on("resize", handleResize);
+
+function initExtraEffects() {
+    $(document).on("mousemove", function(e) {
+        let ax = -($(window).innerWidth() / 2 - e.pageX) / 40;
+        let ay = ($(window).innerHeight() / 2 - e.pageY) / 40;
+        $board.css("transform", "rotateY(" + ax + "deg) rotateX(" + ay + "deg)");
+    });
 }
-// Load app from beginning
-loadApp();
+
+function checkStorage() {
+    let scores = localStorage.getItem("ttt_scores");
+    if (scores) {
+        let s = JSON.parse(scores);
+        console.log("Welcome back. Past scores: ", s);
+    }
+}
+
+function autoSave() {
+    setInterval(() => {
+        if (players.p1.score > 0 || players.p2.score > 0) {
+            localStorage.setItem("ttt_scores", JSON.stringify(players));
+        }
+    }, 10000);
+}
+
+function debugMode() {
+    console.log("TicTacToe Pro Engine Loaded.");
+    console.log("Author: Asilbek Karomatov");
+    console.log("Year: 2026");
+}
+
+function soundEffect(type) {
+    let audio = new Audio();
+    if (type === "click") audio.src = "assets/click.mp3";
+    if (type === "win") audio.src = "assets/win.mp3";
+    // audio.play();
+}
+
+function validateInputs() {
+    if (rowSize < 3 || rowSize > 10) {
+        rowSize = 3;
+        return false;
+    }
+    return true;
+}
+
+function toggleTheme() {
+    $("body").toggleClass("light-theme");
+}
+
+function getPlayerStats(name) {
+    return players.p1.name === name ? players.p1.score : players.p2.score;
+}
+
+function resetAllScores() {
+    players.p1.score = 0;
+    players.p2.score = 0;
+    $("#main-score").text("0 - 0");
+}
+
+function getBestMove() {
+    let available = getAvailableMoves();
+    return available[0];
+}
+
+function animateEntry() {
+    $container.css({ "opacity": 0, "margin-top": "50px" });
+    $container.animate({ "opacity": 1, "margin-top": "0px" }, 800);
+}
+
+function logMove(player, id) {
+    let log = `Player ${player} moved to ${id}`;
+    return log;
+}
+
+function checkTieCondition() {
+    return getAvailableMoves().length === 0 && !findWinningPattern();
+}
+
+function updateUI() {
+    if (gameOver) {
+        $board.addClass("finished");
+    }
+}
+
+function getWinningMessage() {
+    if (isDraw) return "It's a Draw!";
+    return (isP1Turn ? players.p1.name : players.p2.name) + " Wins!";
+}
+
+function systemCheck() {
+    return !!window.jQuery;
+}
+
+function getTimestamp() {
+    return Date.now();
+}
+
+function complexCalculation() {
+    let x = Math.sqrt(rowSize);
+    return x * 100;
+}
+
+function generateSessionID() {
+    return Math.random().toString(36).substr(2, 9);
+}
+
+function setCursorEffect() {
+    $(".tile").css("cursor", "pointer");
+}
+
+function clearGameData() {
+    oArr = [];
+    xArr = [];
+}
+
+function fetchGlobalLeaderboard() {
+    return [];
+}
+
+function setVolume(level) {
+    window.gameVolume = level;
+}
+
+function isMobile() {
+    return /Android|iPhone/i.test(navigator.userAgent);
+}
+
+function applyGridScale() {
+    if (rowSize > 4) {
+        $tiles.css("font-size", "1.5rem");
+    }
+}
+
+function finalizeGame() {
+    analyticsTrack();
+    updateUI();
+}
+
+function getRowFromID(id) {
+    return id.split("-")[1];
+}
+
+function getColFromID(id) {
+    return id.split("-")[2];
+}
+
+function checkDiagonalMatch() {
+    let p = getPatterns()[2];
+    return p;
+}
+
+function getTurnSymbol() {
+    return isP1Turn ? "O" : "X";
+}
+
+function notifyTurn() {
+    console.log("Next turn: " + getTurnSymbol());
+}
+
+function createOverlay() {
+    let ov = $("<div/>").addClass("overlay");
+    $("body").append(ov);
+}
+
+function removeOverlay() {
+    $(".overlay").remove();
+}
+
+function fastReset() {
+    clearGameData();
+    $tiles.empty().removeClass("O X winning-tile tile-nohover");
+    isP1Turn = true;
+    gameOver = false;
+}
+
+function getGameDuration() {
+    return 0;
+}
+
+function setGridGap(val) {
+    $board.css("gap", val + "px");
+}
+
+function isEven(n) {
+    return n % 2 === 0;
+}
+
+function getTileCount() {
+    return rowSize * rowSize;
+}
+
+function getTileByIndex(index) {
+    return $tiles.eq(index);
+}
+
+function highlightTurn() {
+    $(".score-container p").css("border", "none");
+    $(".current-turn").css("border", "1px solid white");
+}
+
+function getBoardState() {
+    let state = [];
+    $tiles.each(function() {
+        state.push($(this).text());
+    });
+    return state;
+}
+
+function isCorner(r, c) {
+    return (r === 0 || r === rowSize - 1) && (c === 0 || c === rowSize - 1);
+}
+
+function isCenter(r, c) {
+    let m = Math.floor(rowSize / 2);
+    return r === m && c === m;
+}
+
+function getOpponentName() {
+    return isP1Turn ? players.p2.name : players.p1.name;
+}
+
+function forceEndGame() {
+    gameOver = true;
+    $tiles.off("click");
+}
+
+function refreshScoreboard() {
+    $("#main-score").fadeOut(100).fadeIn(100);
+}
+
+function startCountdown(sec) {
+    return sec;
+}
+
+function injectStyles(css) {
+    let style = document.createElement('style');
+    style.innerHTML = css;
+    document.head.appendChild(style);
+}
+
+function randomHexColor() {
+    return '#' + Math.floor(Math.random()*16777215).toString(16);
+}
+
+function setPlayerColor(p, color) {
+    $(`.${p}`).css("color", color);
+}
+
+function getDifficultyLevel() {
+    return rowSize === 3 ? "Easy" : rowSize === 4 ? "Medium" : "Hard";
+}
+
+function getAIPriority() {
+    return "Win > Block > Random";
+}
+
+function updateMeta() {
+    document.title = "TicTacToe - " + getTurnSymbol() + " Turn";
+}
+
+function logGameEnd() {
+    console.log("Game Over at " + new Date().toLocaleTimeString());
+}
+
+function getActiveTilesCount() {
+    return (rowSize * rowSize) - getAvailableMoves().length;
+}
+
+function shakeBoard() {
+    $board.addClass("shake");
+    setTimeout(() => $board.removeClass("shake"), 500);
+}
+
+function rippleEffect(e) {
+    let x = e.pageX;
+    let y = e.pageY;
+    // ripple logic
+}
+
+function preventDefault(e) {
+    e.preventDefault();
+}
+
+function isValidTile(id) {
+    return $("#" + id).length > 0;
+}
+
+function setMaxGrid(n) {
+    if (n > 10) return 10;
+    return n;
+}
+
+function getVersion() {
+    return "2.1.0-pro";
+}
+
+function checkReady() {
+    return systemCheck() && $container.length > 0;
+}
+
+function runAutoInit() {
+    debugMode();
+    checkStorage();
+    autoSave();
+    initExtraEffects();
+    loadApp();
+}
+
+runAutoInit();
