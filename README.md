@@ -4,6 +4,10 @@ A high-performance, visually stunning Tic-Tac-Toe game built with modern web tec
 
 ---
 
+![Tic-Tac-Toe Pro Gameplay](photo.png)
+
+---
+
 ## ✨ Features
 
 * **🌐 Dual Game Modes:**
@@ -42,7 +46,11 @@ The algorithm recursively explores the game tree to choose the move that maximiz
 ## 📂 Project Structure
 
 ```bash
-├── index.html       # Game structure and layout
-├── style.scss       # Source SASS file (3D effects, glassmorphism, animations)
-├── style.css        # Compiled production CSS
-└── app.js           # Core game logic & Minimax implementation
+├── css/             # Compiled production styles
+│   └── style.css    # Final CSS used by the browser
+├── .gitignore       # Instructions for Git to ignore specific files
+├── app.js           # Core game logic & AI implementation
+├── index.html       # Main game entry point
+├── photo.png        # Gameplay screenshot for documentation
+├── README.md        # Project documentation (this file)
+└── style.scss       # Source SASS file with variables and 3D effects
