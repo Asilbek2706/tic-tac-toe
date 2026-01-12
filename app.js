@@ -16,28 +16,32 @@ function loadApp() {
     againstAI = false;
     rowSize = 3;
     players.p2.name = "";
-    var h2 = $("<h2/>").text("Let's play some pro Tic Tac Toe");
+    var h2 = $("<h2/>").text("Tic Tac Toe Pro");
     var miniContainer = $("<div/>").addClass("mini-container");
-    var p = $("<p/>").text("Configure your game preferences");
+    var p = $("<p/>").text("O'yin sozlamalarini tanlang:");
     miniContainer.append(p);
+
     var divOpponent = $("<div/>").addClass("players");
     divOpponent.append($("<input type='radio' name='opp' id='pvp' checked value='p'>").click(playAgainst));
-    divOpponent.append($("<label for='pvp'>Player vs. Player</label>"));
+    divOpponent.append($("<label for='pvp'>PvP (Do'st bilan)</label>"));
     divOpponent.append($("<input type='radio' name='opp' id='pvai' value='ai'>").click(playAgainst));
-    divOpponent.append($("<label for='pvai'>Player vs. AI</label>"));
+    divOpponent.append($("<label for='pvai'>PvAI (Smart AI)</label>"));
     miniContainer.append(divOpponent);
+
     var divNames = $("<div/>").addClass("players").attr("id", "nameInputs");
     divNames.append($("<input type='text' id='p1name' placeholder='Player 1 Name'>").on("input", getNames));
     divNames.append($("<input type='text' id='p2name' placeholder='Player 2 Name'>").on("input", getNames));
     miniContainer.append(divNames);
+
     var gridPreference = $("<div/>").addClass("difficulty");
-    gridPreference.append($("<label>Grid Size:</label>"));
+    gridPreference.append($("<label>Grid o'lchami: </label>"));
     [3, 4, 5].forEach(num => {
         gridPreference.append($(`<input type='radio' name='grid' id='grid${num}' ${num === 3 ? 'checked' : ''} value='${num}'>`).click(setDifficulty));
         gridPreference.append($(`<label for='grid${num}'>${num}x${num}</label>`));
     });
     miniContainer.append(gridPreference);
-    var btn = $("<button/>").text("Start Game").addClass("fas fa-play").click(gameInit);
+
+    var btn = $("<button/>").text("Boshlash").addClass("fas fa-play").click(gameInit);
     miniContainer.append(btn);
     $container.append(h2).append(miniContainer);
 }
@@ -74,7 +78,6 @@ function gameInit(e) {
         $container.empty();
         startGame();
     });
-    $(".links").hide("slow");
 }
 
 function startGame() {
@@ -86,11 +89,17 @@ function startGame() {
     var homeBtn = $("<button/>").attr("id", "homeBtn").html("<i class='fas fa-home'></i>").click(goHome);
     $container.append(homeBtn).append(scoreContainer);
     $("#p1-disp").addClass("current-turn");
+
     $board = $("<div/>").addClass("board");
     $board.css({
         "grid-template-columns": "repeat(" + rowSize + ", 1fr)",
-        "grid-template-rows": "repeat(" + rowSize + ", 1fr)"
+        "grid-template-rows": "repeat(" + rowSize + ", 1fr)",
+        "display": "grid",
+        "gap": "10px",
+        "max-width": "400px",
+        "margin": "20px auto"
     });
+
     for (let i = 0; i < rowSize; i++) {
         for (let j = 0; j < rowSize; j++) {
             let tile = $("<div/>").addClass("tile").attr("id", "t-" + i + "-" + j).click(function() {
@@ -111,7 +120,8 @@ function tileClicked(r, c) {
     if ($("#" + id).text() !== "" || gameOver) return;
     playOn(id);
     if (againstAI && !gameOver) {
-        setTimeout(AILogic, 400);
+        // AI o'ylayotganini bildirish uchun kichik delay
+        setTimeout(AILogic, 300);
     }
 }
 
@@ -129,17 +139,27 @@ function switchTurns() {
     $(".score-container p").toggleClass("current-turn");
 }
 
+// OPTIMIZATSIYA QILINGAN AI MANTIQI
 function AILogic() {
+    let available = getAvailableMoves();
+    if (available.length === 0 || gameOver) return;
+
     let bestScore = -Infinity;
     let move;
-    let available = getAvailableMoves();
+
+    // Chuqurlikni grid o'lchamiga qarab cheklaymiz (QOTMASLIK UCHUN ASOSIY QISM)
+    let maxDepth = (rowSize === 3) ? 9 : (rowSize === 4 ? 4 : 2);
+
+    // Agar 4x4 yoki 5x5 bo'lsa va juda ko'p bo'sh joy bo'lsa, markazni egallashga harakat qiladi
     if (rowSize > 3 && available.length > (rowSize * rowSize) - 2) {
-        move = available[Math.floor(Math.random() * available.length)];
+        let center = Math.floor(rowSize / 2);
+        let centerID = `t-${center}-${center}`;
+        move = $("#" + centerID).text() === "" ? centerID : available[Math.floor(Math.random() * available.length)];
     } else {
         for (let i = 0; i < available.length; i++) {
             let id = available[i];
             setVirtualTile(id, "X");
-            let score = minimax(0, false, -Infinity, Infinity);
+            let score = minimax(0, false, -Infinity, Infinity, maxDepth);
             setVirtualTile(id, "");
             if (score > bestScore) {
                 bestScore = score;
@@ -150,18 +170,22 @@ function AILogic() {
     if (move) playOn(move);
 }
 
-function minimax(depth, isMaximizing, alpha, beta) {
+function minimax(depth, isMaximizing, alpha, beta, maxDepth) {
     let result = checkWinnerVirtual();
     if (result !== null) {
-        return result === "X" ? 10 - depth : result === "O" ? depth - 10 : 0;
+        if (result === "X") return 10 - depth;
+        if (result === "O") return depth - 10;
+        return 0;
     }
-    if (depth > (rowSize === 3 ? 9 : 4)) return 0;
+
+    if (depth >= maxDepth) return 0; // Chuqurlik yetganda to'xtatish
+
     let available = getAvailableMoves();
     if (isMaximizing) {
         let bestScore = -Infinity;
         for (let i = 0; i < available.length; i++) {
             setVirtualTile(available[i], "X");
-            let score = minimax(depth + 1, false, alpha, beta);
+            let score = minimax(depth + 1, false, alpha, beta, maxDepth);
             setVirtualTile(available[i], "");
             bestScore = Math.max(score, bestScore);
             alpha = Math.max(alpha, score);
@@ -172,7 +196,7 @@ function minimax(depth, isMaximizing, alpha, beta) {
         let bestScore = Infinity;
         for (let i = 0; i < available.length; i++) {
             setVirtualTile(available[i], "O");
-            let score = minimax(depth + 1, true, alpha, beta);
+            let score = minimax(depth + 1, true, alpha, beta, maxDepth);
             setVirtualTile(available[i], "");
             bestScore = Math.min(score, bestScore);
             beta = Math.min(beta, score);
@@ -214,14 +238,20 @@ function checkForMatch() {
 
 function findWinningPattern() {
     let patterns = getPatterns();
-    for (let i = 0; i < patterns.length; i++) {
-        for (let j = 0; j < patterns[i].length; j++) {
-            let p = patterns[i][j];
-            let first = $("#" + p[0]).text();
-            if (first !== "" && p.every(id => $("#" + id).text() === first)) {
-                return p;
-            }
-        }
+    // Rows
+    for (let r of patterns[0]) {
+        let val = $("#" + r[0]).text();
+        if (val !== "" && r.every(id => $("#" + id).text() === val)) return r;
+    }
+    // Cols
+    for (let c of patterns[1]) {
+        let val = $("#" + c[0]).text();
+        if (val !== "" && c.every(id => $("#" + id).text() === val)) return c;
+    }
+    // Diagonals
+    for (let d of patterns[2]) {
+        let val = $("#" + d[0]).text();
+        if (val !== "" && d.every(id => $("#" + id).text() === val)) return d;
     }
     return null;
 }
@@ -258,9 +288,7 @@ function didWin(pattern) {
 }
 
 function showReplayBtn() {
-    setTimeout(() => {
-        $(".replay").fadeIn("slow");
-    }, 500);
+    setTimeout(() => { $(".replay").fadeIn("slow"); }, 500);
 }
 
 function reset() {
@@ -270,340 +298,12 @@ function reset() {
 }
 
 function goHome() {
-    players = { p1: { name: "", score: 0 }, p2: { name: "", score: 0 } };
+    players.p1.score = 0; players.p2.score = 0;
     winningInterval.forEach(clearInterval);
     winningInterval = [];
     $container.fadeOut("fast", loadApp);
 }
 
-function analyticsTrack() {
-    let session = {
-        grid: rowSize,
-        mode: againstAI ? "AI" : "PVP",
-        p1: players.p1.name,
-        p2: players.p2.name,
-        time: new Date().toISOString()
-    };
-    localStorage.setItem("lastSession", JSON.stringify(session));
-}
-
-function handleResize() {
-    let w = $(window).width();
-    if (w < 400) {
-        $board.css("gap", "5px");
-    } else {
-        $board.css("gap", "15px");
-    }
-}
-
-$(window).on("resize", handleResize);
-
-function initExtraEffects() {
-    $(document).on("mousemove", function(e) {
-        let ax = -($(window).innerWidth() / 2 - e.pageX) / 40;
-        let ay = ($(window).innerHeight() / 2 - e.pageY) / 40;
-        $board.css("transform", "rotateY(" + ax + "deg) rotateX(" + ay + "deg)");
-    });
-}
-
-function checkStorage() {
-    let scores = localStorage.getItem("ttt_scores");
-    if (scores) {
-        let s = JSON.parse(scores);
-        console.log("Welcome back. Past scores: ", s);
-    }
-}
-
-function autoSave() {
-    setInterval(() => {
-        if (players.p1.score > 0 || players.p2.score > 0) {
-            localStorage.setItem("ttt_scores", JSON.stringify(players));
-        }
-    }, 10000);
-}
-
-function debugMode() {
-    console.log("TicTacToe Pro Engine Loaded.");
-    console.log("Author: Asilbek Karomatov");
-    console.log("Year: 2026");
-}
-
-function soundEffect(type) {
-    let audio = new Audio();
-    if (type === "click") audio.src = "assets/click.mp3";
-    if (type === "win") audio.src = "assets/win.mp3";
-    // audio.play();
-}
-
-function validateInputs() {
-    if (rowSize < 3 || rowSize > 10) {
-        rowSize = 3;
-        return false;
-    }
-    return true;
-}
-
-function toggleTheme() {
-    $("body").toggleClass("light-theme");
-}
-
-function getPlayerStats(name) {
-    return players.p1.name === name ? players.p1.score : players.p2.score;
-}
-
-function resetAllScores() {
-    players.p1.score = 0;
-    players.p2.score = 0;
-    $("#main-score").text("0 - 0");
-}
-
-function getBestMove() {
-    let available = getAvailableMoves();
-    return available[0];
-}
-
-function animateEntry() {
-    $container.css({ "opacity": 0, "margin-top": "50px" });
-    $container.animate({ "opacity": 1, "margin-top": "0px" }, 800);
-}
-
-function logMove(player, id) {
-    let log = `Player ${player} moved to ${id}`;
-    return log;
-}
-
-function checkTieCondition() {
-    return getAvailableMoves().length === 0 && !findWinningPattern();
-}
-
-function updateUI() {
-    if (gameOver) {
-        $board.addClass("finished");
-    }
-}
-
-function getWinningMessage() {
-    if (isDraw) return "It's a Draw!";
-    return (isP1Turn ? players.p1.name : players.p2.name) + " Wins!";
-}
-
-function systemCheck() {
-    return !!window.jQuery;
-}
-
-function getTimestamp() {
-    return Date.now();
-}
-
-function complexCalculation() {
-    let x = Math.sqrt(rowSize);
-    return x * 100;
-}
-
-function generateSessionID() {
-    return Math.random().toString(36).substr(2, 9);
-}
-
-function setCursorEffect() {
-    $(".tile").css("cursor", "pointer");
-}
-
-function clearGameData() {
-    oArr = [];
-    xArr = [];
-}
-
-function fetchGlobalLeaderboard() {
-    return [];
-}
-
-function setVolume(level) {
-    window.gameVolume = level;
-}
-
-function isMobile() {
-    return /Android|iPhone/i.test(navigator.userAgent);
-}
-
-function applyGridScale() {
-    if (rowSize > 4) {
-        $tiles.css("font-size", "1.5rem");
-    }
-}
-
-function finalizeGame() {
-    analyticsTrack();
-    updateUI();
-}
-
-function getRowFromID(id) {
-    return id.split("-")[1];
-}
-
-function getColFromID(id) {
-    return id.split("-")[2];
-}
-
-function checkDiagonalMatch() {
-    let p = getPatterns()[2];
-    return p;
-}
-
-function getTurnSymbol() {
-    return isP1Turn ? "O" : "X";
-}
-
-function notifyTurn() {
-    console.log("Next turn: " + getTurnSymbol());
-}
-
-function createOverlay() {
-    let ov = $("<div/>").addClass("overlay");
-    $("body").append(ov);
-}
-
-function removeOverlay() {
-    $(".overlay").remove();
-}
-
-function fastReset() {
-    clearGameData();
-    $tiles.empty().removeClass("O X winning-tile tile-nohover");
-    isP1Turn = true;
-    gameOver = false;
-}
-
-function getGameDuration() {
-    return 0;
-}
-
-function setGridGap(val) {
-    $board.css("gap", val + "px");
-}
-
-function isEven(n) {
-    return n % 2 === 0;
-}
-
-function getTileCount() {
-    return rowSize * rowSize;
-}
-
-function getTileByIndex(index) {
-    return $tiles.eq(index);
-}
-
-function highlightTurn() {
-    $(".score-container p").css("border", "none");
-    $(".current-turn").css("border", "1px solid white");
-}
-
-function getBoardState() {
-    let state = [];
-    $tiles.each(function() {
-        state.push($(this).text());
-    });
-    return state;
-}
-
-function isCorner(r, c) {
-    return (r === 0 || r === rowSize - 1) && (c === 0 || c === rowSize - 1);
-}
-
-function isCenter(r, c) {
-    let m = Math.floor(rowSize / 2);
-    return r === m && c === m;
-}
-
-function getOpponentName() {
-    return isP1Turn ? players.p2.name : players.p1.name;
-}
-
-function forceEndGame() {
-    gameOver = true;
-    $tiles.off("click");
-}
-
-function refreshScoreboard() {
-    $("#main-score").fadeOut(100).fadeIn(100);
-}
-
-function startCountdown(sec) {
-    return sec;
-}
-
-function injectStyles(css) {
-    let style = document.createElement('style');
-    style.innerHTML = css;
-    document.head.appendChild(style);
-}
-
-function randomHexColor() {
-    return '#' + Math.floor(Math.random()*16777215).toString(16);
-}
-
-function setPlayerColor(p, color) {
-    $(`.${p}`).css("color", color);
-}
-
-function getDifficultyLevel() {
-    return rowSize === 3 ? "Easy" : rowSize === 4 ? "Medium" : "Hard";
-}
-
-function getAIPriority() {
-    return "Win > Block > Random";
-}
-
-function updateMeta() {
-    document.title = "TicTacToe - " + getTurnSymbol() + " Turn";
-}
-
-function logGameEnd() {
-    console.log("Game Over at " + new Date().toLocaleTimeString());
-}
-
-function getActiveTilesCount() {
-    return (rowSize * rowSize) - getAvailableMoves().length;
-}
-
-function shakeBoard() {
-    $board.addClass("shake");
-    setTimeout(() => $board.removeClass("shake"), 500);
-}
-
-function rippleEffect(e) {
-    let x = e.pageX;
-    let y = e.pageY;
-    // ripple logic
-}
-
-function preventDefault(e) {
-    e.preventDefault();
-}
-
-function isValidTile(id) {
-    return $("#" + id).length > 0;
-}
-
-function setMaxGrid(n) {
-    if (n > 10) return 10;
-    return n;
-}
-
-function getVersion() {
-    return "2.1.0-pro";
-}
-
-function checkReady() {
-    return systemCheck() && $container.length > 0;
-}
-
-function runAutoInit() {
-    debugMode();
-    checkStorage();
-    autoSave();
-    initExtraEffects();
+$(document).ready(function() {
     loadApp();
-}
-
-runAutoInit();
+});
