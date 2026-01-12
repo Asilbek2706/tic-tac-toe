@@ -1,4 +1,4 @@
-# 🎮 Tic-Tac-Toe Pro (Professional Edition)
+# 🎮 Tic-Tac-Toe Pro 
 
 A high-performance, visually stunning Tic-Tac-Toe game built with modern web technologies. This version features a sophisticated UI/UX design, smooth animations, and an unbeatable Artificial Intelligence.
 
